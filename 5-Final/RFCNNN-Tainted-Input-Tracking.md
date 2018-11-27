@@ -3,7 +3,7 @@ RFC: NN
 Author: Travis Plunk
 Status: Draft
 Version: 0.1
-Area: Security
+Area: Engine
 Comments Due: February 1, 2019
 ---
 
@@ -84,6 +84,17 @@ the RFC should be updated with the dependency.
 
 Integer `0`-`100` are cached by the compiler.
 This means `1` is always the same object and makes the current implementation not able to track these values.
+
+#### Non-parameter binding use of tainted input
+
+In full language mode,
+it is possible to use input that comes from constrained language mode via methods other than parameters.
+
+1. Global Variables
+1. Environment Variable
+
+We will start with the assumption that these values are being passed to another cmdlet that is validating the input.
+This is naive, but until we have the other behaviors implemented it is difficult to estimate what will be needed in this area.
 
 ## Alternate Proposals and Considerations
 
