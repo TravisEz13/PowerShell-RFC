@@ -17,6 +17,10 @@ Remote ScriptBlock Logging
 
 This is an addition to the existing ScriptBlock creation logging.
 The goal is to make it easier to configure to collect the logs centrally.
+Because many ScriptBlocks contain sensitive information,
+it is advised to encrypt the logs locally against attacker that might compromise the local machine.
+This feature eliminates storing the ScriptBlocks locally and
+therefore the need to secure the logs locally.
 This feature will be experimental.
 
 ## Motivation
@@ -35,13 +39,13 @@ with Azure Log Analytics with PowerShell Secrets with the name `myKeyName`.
 ### First time registration
 
 ```powershell
-Register-PSScriptBlockLogger -Provider AzureLogAnalytics -KeyName myKeyName -Properties @{
+Register-PSScriptBlockLogger -Extension AzureLogAnalytics -KeyName myKeyName -Properties @{
     WorkspaceId = ‘myworkspaceid’
 }
 ```
 
 ```output
-Provider: AzureLogAnalytics
+Extension: AzureLogAnalytics
 Properties: {WorkspaceId="myworkspaceid"}
 KeyName: myKeyName
 ```
@@ -49,13 +53,13 @@ KeyName: myKeyName
 ### Register when something is already registered
 
 ```powershell
-Register-PSScriptBlockLogger -Provider AzureLogAnalytics -KeyName myKeyName -Properties @{
+Register-PSScriptBlockLogger -Extension AzureLogAnalytics -KeyName myKeyName -Properties @{
     WorkspaceId = ‘myworkspaceid’
 }
 ```
 
 ```output
-Error: A provider is already registered.  User -Force to overwrite the current provider settings.
+Error: A extension is already registered.  User -Force to overwrite the current extension settings.
 ```
 
 ### Unregister
@@ -68,14 +72,14 @@ Upon success, there would be no output.
 
 ### Get current registration
 
-Note: this example assumes that the provider was already register as in [First time registration](#first-time-registration)
+Note: this example assumes that the extension was already register as in [First time registration](#first-time-registration)
 
 ```powershell
 Get-PSScriptBlockLogger
 ```
 
 ```output
-Provider: AzureLogAnalytics
+Extension: AzureLogAnalytics
 Properties: {WorkspaceId="myworkspaceid"}
 KeyName: myKeyName
 ```
@@ -90,25 +94,34 @@ KeyName: myKeyName
    - Authenticated
 1. The machine admin is willing and authorized to send all ScriptBlocks to the logging system.
 
+### Extensions
+
+For this version of the feature,
+extension will be built into PowerShell.
+
+See [Extensions outside the engine](#extensions-outside-the-engine),
+for a discussion of future plans and
+concerns that need to be addressed.
+
 ### Registration
 
-Only one logging provider can be registered at a time.
+Only one logging extension can be registered at a time.
 There will be two options for registration,
 which are explained below:
 
 #### Registration cmdlet
 
-There will be a cmdlet to register a logging provider.
-`Register-PSScriptBlockLogger` will allow you to register a provider.
+There will be a cmdlet to register a logging extension.
+`Register-PSScriptBlockLogger` will allow you to register a extension.
 It will update the Computer-Wide PowerShell configuration file to persist this as a policy.
 
 #### Policy
 
 There will be a new policy with three settings:
 
-- ScriptBlockLoggingProvider - The name of the provider
-- ScriptBlockLoggingProviderKeyName - The name of [secret][secrets-rfc] storing the key used to access the providers.
-- ScriptBlockLoggingProviderProperties - Properties needed by the provider, persisted as JSON.
+- ScriptBlockLoggingExtension - The name of the extension
+- ScriptBlockLoggingExtensionKeyName - The name of [secret][secrets-rfc] storing the key used to access the extensions.
+- ScriptBlockLoggingExtensionProperties - Properties needed by the extension, persisted as JSON.
 
 ### Collecting and Sending Data
 
@@ -123,7 +136,7 @@ The background task data processing will have two responsibilities:
 #### Background Task - Batching and sending
 
 The background task will batch data into group and
-send data based on specification from the logging provider.
+send data based on specification from the logging extension.
 The task will have a timeout, if a batch is not full by the end of the timeout,
 it will send the current batch.
 This timeout will reset each time a new item is added to the batch.
@@ -137,7 +150,7 @@ and delete items if the number of items exceeds a predefined limit.
 
 | Name                  | Type     | Description                                                                            |
 |-----------------------|----------|----------------------------------------------------------------------------------------|
-| ScriptBlockText       | string   | The text of the script block (may be truncated, based on field size limit of provider) |
+| ScriptBlockText       | string   | The text of the script block (may be truncated, based on field size limit of extension)|
 | UtcTime               | datetime | The time on the local machine which the ScriptBlock was started                        |
 | ScriptBlockHash       | string   | A hash of the script block                                                             |
 | File                  | string   | If applicable, the name of the file the script block came from                         |
@@ -178,9 +191,9 @@ Please see [Additional logging](#additional-logging).
 
 ## Future Work
 
-### Splunk provider
+### Splunk extension
 
-We would like to integrate a provider for sending data to Splunk.
+We would like to integrate a extension for sending data to Splunk.
 We could do this work in the future or someone else could contribute this.
 
 ### Encrypting the ScriptBlock
@@ -210,3 +223,12 @@ Additional logging being consider include:
 
 Either of these would take up significantly more bandwidth.
 We think this feature should be tried before we expand the feature.
+
+### Extensions outside the engine
+
+In the future,
+we can consider an extension module that doesn't require the extension to be built into the engine.
+
+The most obvious way is to add an extension in the engine that will load and run other executions.
+
+The problem with this for this type of feature is it comes under several types of attacks which are more difficult to defend against when they are outside the engine.
