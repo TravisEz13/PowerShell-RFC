@@ -11,7 +11,7 @@ Plan to implement: Yes
 
 # Title
 
-ScriptBlock Logging
+Remote ScriptBlock Logging
 
 ## Description
 
@@ -22,7 +22,7 @@ This feature will be experimental.
 ## Motivation
 
 As a administrator of machines which run PowerShell (machine admins),
-I can easily log stript blocks which PowerShell executes to systems such as Azure Log Analytics or Splunk (log systems),
+I can easily log script blocks which PowerShell executes to systems such as Azure Log Analytics or Splunk (log systems),
 so that I can analyze PowerShell activity on all the machines I run.
 
 ## User Experience
@@ -62,10 +62,9 @@ Error: A provider is already registered.  User -Force to overwrite the current p
 
 ```powershell
 Unregister-PSScriptBlockLogger
-}
 ```
 
-There would be no output.
+Upon success, there would be no output.
 
 ### Get current registration
 
