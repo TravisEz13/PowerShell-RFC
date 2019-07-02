@@ -211,8 +211,6 @@ Azure Active Directory user to send data.
 We continue to investigate how to make it easier to
 use an existing installed Azure Log Analytics agent to send this data.
 
-[secrets-rfc]: https://github.com/PowerShell/PowerShell-RFC/pull/208
-
 ### Additional logging
 
 The current plan is to log ScriptBlock creation.
@@ -231,4 +229,9 @@ we can consider an extension module that doesn't require the extension to be bui
 
 The most obvious way is to add an extension in the engine that will load and run other executions.
 
-The problem with this for this type of feature is it comes under several types of attacks which are more difficult to defend against when they are outside the engine.
+The problem with this for this type of feature is it comes under several types of attacks,
+such as [DLL planting][dll-planting-blog],
+which are more difficult to defend against when they are outside the engine.
+
+[secrets-rfc]: https://github.com/PowerShell/PowerShell-RFC/pull/208
+[dll-planting-blog]:https://blogs.technet.microsoft.com/srd/2018/04/04/triaging-a-dll-planting-vulnerability/
