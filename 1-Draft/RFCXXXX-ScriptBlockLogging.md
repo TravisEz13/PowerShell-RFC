@@ -223,6 +223,13 @@ This is one of the reasons for the feature being experimental.
 
 ## Alternate Proposals and Considerations
 
+### Just use agent
+
+Add new events for this feature to Syslog, Oslog, and EventLog,
+then use the Azure Log Analytics and Splunk agents to send the events.
+
+This would avoid securing this new infrastructure from attacks.
+
 ### Original RFC
 
 Note, that an RFC was filed for this by @rhysjtevans.
@@ -267,16 +274,7 @@ Additional logging being consider include:
 Either of these would take up significantly more bandwidth.
 We think this feature should be tried before we expand the feature.
 
-### Extensions outside the engine
+### Allow skipping logging specific script blocks by hash
 
-In the future,
-we can consider an extension module that doesn't require the extension to be built into the engine.
-
-The most obvious way is to add an extension in the engine that will load and run other executions.
-
-The problem with this for this type of feature is it comes under several types of attacks,
-such as [DLL planting][dll-planting-blog],
-which are more difficult to defend against when they are outside the engine.
-
-[secrets-rfc]: https://github.com/PowerShell/PowerShell-RFC/pull/208
-[dll-planting-blog]:https://blogs.technet.microsoft.com/srd/2018/04/04/triaging-a-dll-planting-vulnerability/
+Allow skipping logging specific ScriptBlocks by a cryptographic hash.
+This would help keep the log size small for known good scriptblocks.
