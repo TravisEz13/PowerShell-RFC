@@ -119,21 +119,66 @@ It will update the Computer-Wide PowerShell configuration file to persist this a
 
 There will be a new policy with three settings:
 
-- ScriptBlockLoggingExtension - The name of the extension
+- ScriptBlockLoggingExtension - The name of the extension, which should be a module installed on the system.
 - ScriptBlockLoggingExtensionKeyName - The name of [secret][secrets-rfc] storing the key used to access the extensions.
 - ScriptBlockLoggingExtensionProperties - Properties needed by the extension, persisted as JSON.
 
-### Collecting and Sending Data
+### Extensions
 
-We will add code in `CompiledScriptBlock.LogScriptBlockCreation`
-which adds the data to log into a FIFO structure (send queue).
+#### Loading the extension
+
+PowerShell will import the module and look at the Module Manifest PrivateData for what Class to use to send events.
+
+```PowerShell
+PrivateData = @{
+    PSData = @{
+        ScriptBlockLogging  = @{
+            TypeName='TypeName'
+        }
+    }
+}
+```
+
+The class must have a constructor with a parameter of type SecureString to pass the key and parameters for the rest of the Properties in `ScriptBlockLoggingExtensionProperties`.
+
+The class must have a void method named `PostScriptBlockLog` with the following parameters:
+
+PostLog(string scriptBlockText, string file, string scriptBlockHash, string parentScriptBlockHash, DateTime utcTime, string commandName, int runspaceId, string runspaceName)
+
+1. `scriptBlockText` of type string
+   - The text of the ScriptBlock being created
+1. `scriptBlockHash` of type string
+   - The hash (non-cryptographic) of the ScriptBlock being created
+1. `parentScriptBlockHash` of type string
+   - The hash (non-cryptographic) of the ScriptBlock which first used the created ScriptBlock
+1. `filePath` of type string
+   - If the ScriptBlock was from a file, the path to the file.
+1. `utcTime` of type DateTime
+   - UTC time the command was started.
+1. `commandName` of type string
+   - The first command name in the ScriptBlock
+1. `runspaceId` of type int
+   - a numeric identifier of the runspace the ScriptBlock was created in.
+1. `runspaceName` of type string
+   - The name the of the runspace the ScriptBlock was created in, if set.
+
+We will add code in `CompiledScriptBlock.LogScriptBlockCreation`,
+which does the work to load and call the extension.
+
+PowerShell will not retry calls to the extension which fail.
+
+### Azure Log Analytics Extension
+
+#### Collecting and Sending Data
+
+When processing `PostScriptBlockLog` the extension adds the data to log into a FIFO structure (send queue).
 A background task will be started, which will process the data.
 The background task data processing will have two responsibilities:
 
 1. Batching and sending the data.
 1. Ensuring that the data in the send queue does not grow too large.
 
-#### Background Task - Batching and sending
+##### Background Task - Batching and sending
 
 The background task will batch data into group and
 send data based on specification from the logging extension.
@@ -141,12 +186,12 @@ The task will have a timeout, if a batch is not full by the end of the timeout,
 it will send the current batch.
 This timeout will reset each time a new item is added to the batch.
 
-#### Background Task - Limiting the size of the send queue
+##### Background Task - Limiting the size of the send queue
 
 The task will also monitor the number of items in the send queue
 and delete items if the number of items exceeds a predefined limit.
 
-### Data to send
+#### Data to send
 
 | Name                  | Type     | Description                                                                            |
 |-----------------------|----------|----------------------------------------------------------------------------------------|
@@ -164,13 +209,13 @@ and delete items if the number of items exceeds a predefined limit.
 | CompressedScriptBlock | string   | If `ScriptBlockText`is truncated, a Britoli compressed version base64 coded.           |
 | BatchOrder            | double   | The order we sent this item inside a batch, helps display event in the correct order   |
 
-### Onboarding
+#### Onboarding
 
 Assuming you already have an Azure Subscription,
 a cmdlet will be provided, using the `az` module,
 to walk you through creating an Azure Log Analytics workspaces and creating a deployment script.
 
-### API used to send data
+#### API used to send data
 
 https://docs.microsoft.com/en-us/azure/azure-monitor/platform/data-collector-api
 This API is in preview and is subject to change.
