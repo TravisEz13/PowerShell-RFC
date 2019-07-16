@@ -141,7 +141,7 @@ PrivateData = @{
 
 The class must have a constructor with a parameter of type SecureString to pass the key and parameters for the rest of the Properties in `ScriptBlockLoggingExtensionProperties`.
 
-The class must have a void method named `PostScriptBlockLog` with the following parameters:
+The class must have a void method named `PostScriptBlockEntry` with the following parameters:
 
 PostLog(string scriptBlockText, string file, string scriptBlockHash, string parentScriptBlockHash, DateTime utcTime, string commandName, int runspaceId, string runspaceName)
 
@@ -165,7 +165,7 @@ PostLog(string scriptBlockText, string file, string scriptBlockHash, string pare
 We will add code in `CompiledScriptBlock.LogScriptBlockCreation`,
 which does the work to load and call the extension.
 
-PowerShell will not retry calls to the extension which fail.
+PowerShell will not retry calls to the extension which fail and will log locally that the call failed.
 
 ### Azure Log Analytics Extension
 
